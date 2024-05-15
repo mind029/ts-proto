@@ -11,6 +11,7 @@ import SourceInfo from "./sourceInfo";
 import { impFile, maybePrefixPackage } from "./utils";
 import { basicTypeName, toReaderCall } from "./types";
 import { Reader } from "protobufjs/minimal";
+import { getExtensionTypeName, getExtensionPackageName } from './patches/common'
 
 const fileDescriptorProto = imp("FileDescriptorProto@ts-proto-descriptors");
 
@@ -201,6 +202,8 @@ export function generateSchema(ctx: Context, fileDesc: FileDescriptorProto, sour
 }
 
 function getExtensionValue(ctx: Context, extension: FieldDescriptorProto, data: Uint8Array[]): Code {
+  const codeTypeName = getExtensionTypeName(extension)
+  const extensionPackageName = getExtensionPackageName(extension)
   if (extension.type == FieldDescriptorProto_Type.TYPE_MESSAGE) {
     const typeName = basicTypeName(ctx, extension);
     const resultBuffer = Buffer.concat(
@@ -212,14 +215,25 @@ function getExtensionValue(ctx: Context, extension: FieldDescriptorProto, data: 
       }),
     );
     const result = resultBuffer.toString("base64");
-    return code`'${extension.name}': ${typeName}.decode(Buffer.from('${result}', 'base64'))`;
+    const v1 = code`${typeName}.decode(Buffer.from('${result}', 'base64'))`
+    return code`'${extensionPackageName}${extension.name}': {value: ${v1}, type: ${codeTypeName}}`;
+  } else if (extension.name === 'field_behavior') {
+    const resultBuffer2 = Buffer.concat(
+      data.map((d) => {
+        // Skip length byte
+        const reader = new Reader(d);
+        reader.uint32();
+        return (reader.buf as Buffer).slice(reader.pos);
+      }),
+    );
+    return code`'${extensionPackageName}${extension.name}': {value: ${resultBuffer2[0]}, type: ${codeTypeName}}`;
   } else {
     const reader = new Reader(data[0]);
     let value = (reader as any)[toReaderCall(extension)]();
     if (typeof value === "string") {
       value = code`"${value}"`;
     }
-    return code`'${extension.name}': ${value}`;
+    return code`'${extensionPackageName}${extension.name}': {value: ${value}, type: ${codeTypeName}}`;
   }
 }
 

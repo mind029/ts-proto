@@ -101,6 +101,9 @@ export type Options = {
   disableProto2DefaultValues: boolean;
   useNullAsOptional: boolean;
   annotateFilesWithVersion: boolean;
+  coverCustomType: boolean
+  // 是否开启自定义 optional 覆盖，从 filed 的 option (google.api.field_behavior) = REQUIRED, 控制
+  coverCustomOptional: boolean
 };
 
 export function defaultOptions(): Options {
@@ -167,6 +170,8 @@ export function defaultOptions(): Options {
     disableProto2DefaultValues: false,
     useNullAsOptional: false,
     annotateFilesWithVersion: true,
+    coverCustomType: false,
+    coverCustomOptional: false
   };
 }
 
