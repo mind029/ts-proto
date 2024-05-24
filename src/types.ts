@@ -26,6 +26,7 @@ import SourceInfo from "./sourceInfo";
 import { uncapitalize } from "./case";
 import { BaseContext, Context } from "./context";
 import { getMemberName as getEnumMemberName } from "./enums";
+import {maybeCover2ResourceReferenceType} from './patches'
 
 /** Based on https://github.com/dcodeIO/protobuf.js/blob/master/src/types.js#L37. */
 export function basicWireType(type: FieldDescriptorProto_Type): number {
@@ -681,7 +682,8 @@ export function toTypeName(
 
   const fieldType = getFieldOptionsJsType(field, ctx.options) ?? field.type;
 
-  const type = basicTypeName(ctx, { ...field, type: fieldType }, { keepValueType: false });
+  const curType = basicTypeName(ctx, { ...field, type: fieldType }, { keepValueType: false });
+  const type = maybeCover2ResourceReferenceType(ctx, messageDesc, field, curType)
 
   if (isRepeated(field)) {
     const mapType = messageDesc ? detectMapType(ctx, messageDesc, field) : false;

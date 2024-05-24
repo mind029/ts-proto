@@ -14,10 +14,13 @@ export interface Context extends BaseContext {
   currentFile: FileContext;
 }
 
-export interface FileContext {
+export interface FileContext  extends FileDescriptorProto{
   isProto3Syntax: boolean;
 }
 
 export function createFileContext(file: FileDescriptorProto) {
-  return { isProto3Syntax: file.syntax === "proto3" };
+  return {
+    ...file,
+    isProto3Syntax: file.syntax === "proto3"
+  }
 }

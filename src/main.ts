@@ -108,6 +108,7 @@ import {
   withAndMaybeCheckIsNull,
 } from "./utils";
 import { visit, visitServices } from "./visit";
+import { appendFiledComment, maybeCoverFiledOptionalProperty} from './patches'
 
 export function generateFile(ctx: Context, fileDesc: FileDescriptorProto): [string, Code] {
   const { options, utils } = ctx;
@@ -980,10 +981,14 @@ function generateInterfaceDeclaration(
       return;
     }
 
-    const info = sourceInfo.lookup(Fields.message.field, index);
+    const _info = sourceInfo.lookup(Fields.message.field, index)
+    // 追加 pattern 注释
+    const info = appendFiledComment(ctx, messageDesc, fieldDesc, _info);
     maybeAddComment(options, info, chunks, fieldDesc.options?.deprecated);
     const fieldKey = safeAccessor(getFieldName(fieldDesc, options));
-    const isOptional = isOptionalProperty(fieldDesc, messageDesc.options, options, currentFile.isProto3Syntax);
+    const _isOptional = isOptionalProperty(fieldDesc, messageDesc.options, options, currentFile.isProto3Syntax);
+    const isOptional = maybeCoverFiledOptionalProperty(ctx, messageDesc, fieldDesc, _isOptional)
+
     const type = toTypeName(ctx, messageDesc, fieldDesc, isOptional);
     chunks.push(code`${maybeReadonly(options)}${fieldKey}${isOptional ? "?" : ""}: ${type}, `);
   });
